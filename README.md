@@ -282,6 +282,7 @@ The input variables, with their default values (some auto generated) are:
 - **部署指南**：查看 [deployment.md](./deployment.md)
 - **开发指南**：查看 [development.md](./development.md)
 - **贡献指南**：查看 [CONTRIBUTING.md](./CONTRIBUTING.md)
+- **团队协作**：查看 [COLLABORATION_GUIDE.md](./COLLABORATION_GUIDE.md) - **团队协作必读**
 
 ## 安全注意事项
 

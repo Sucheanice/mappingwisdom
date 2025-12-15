@@ -8,7 +8,7 @@
 
 1. **克隆仓库**
    ```bash
-   git clone https://github.com/your-org/mappingwisdom.git
+   git clone https://github.com/Sucheanice/mappingwisdom.git
    cd mappingwisdom
    ```
 
@@ -175,8 +175,16 @@ git push origin feature/your-feature-name
 如有问题，可以：
 
 - 查看项目文档
+- 查看 [协作指南](./COLLABORATION_GUIDE.md) 了解团队协作流程
 - 创建 issue
 - 联系项目维护者
+
+## GitHub 仓库设置
+
+如果你是项目管理员，请参考 [COLLABORATION_GUIDE.md](./COLLABORATION_GUIDE.md) 设置：
+- 团队成员权限
+- 分支保护规则
+- PR 审核流程
 
 再次感谢您的贡献！🎉
 
