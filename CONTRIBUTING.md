@@ -22,6 +22,8 @@
 3. **安装依赖**
    
    **后端（Python）**
+   - 确保使用 Python 3.11（项目要求）
+   - 检查 Python 版本：`python --version`
    ```bash
    cd backend
    # 使用 poetry 或 uv

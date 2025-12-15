@@ -67,7 +67,7 @@
 
 ### 前置要求
 
-- Python 3.10+
+- Python 3.11（推荐，项目使用 Python 3.11）
 - Node.js 18+
 - Docker 和 Docker Compose（可选，用于容器化部署）
 - PostgreSQL 数据库

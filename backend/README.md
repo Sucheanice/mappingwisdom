@@ -2,6 +2,7 @@
 
 ## Requirements
 
+* Python 3.11（项目要求，请确保使用 Python 3.11）
 * [Docker](https://www.docker.com/).
 * [uv](https://docs.astral.sh/uv/) for Python package and environment management.
 
