@@ -1,0 +1,358 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "地图操控 API",
+    "description": "提供地图标记、定位、绘制、测量等功能",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://10.62.111.49:8000/api/v1/agent/map",
+      "description": "地图 Agent API"
+    }
+  ],
+  "security": [
+    {
+      "ApiKeyAuth": []
+    }
+  ],
+  "paths": {
+    "/call": {
+      "post": {
+        "summary": "调用地图工具",
+        "description": "执行地图操作工具调用。支持的工具：add_map_marker（添加标记点）、search_and_locate（搜索位置）、switch_map_layer（切换图层）、add_map_drawing（添加绘制图形）、measure_distance（测量距离）、measure_area（测量面积）、add_map_measurement（添加测量结果）、clear_map_all（清除所有内容）、remove_map_drawing（删除绘制图形）、remove_map_measurement（删除测量结果）",
+        "operationId": "callMapTool",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "工具调用请求，包含工具名称和参数",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ToolCallRequest"
+              },
+              "examples": {
+                "add_marker": {
+                  "summary": "添加标记点示例",
+                  "value": {
+                    "name": "add_map_marker",
+                    "arguments": {
+                      "name": "天安门广场",
+                      "longitude": 116.3974,
+                      "latitude": 39.9093,
+                      "description": "北京市中心广场"
+                    }
+                  }
+                },
+                "search_location": {
+                  "summary": "搜索位置示例",
+                  "value": {
+                    "name": "search_and_locate",
+                    "arguments": {
+                      "query": "北京市",
+                      "zoom": 15,
+                      "add_marker": true
+                    }
+                  }
+                },
+                "switch_layer": {
+                  "summary": "切换图层示例",
+                  "value": {
+                    "name": "switch_map_layer",
+                    "arguments": {
+                      "layer_type": "satellite"
+                    }
+                  }
+                },
+                "measure_distance": {
+                  "summary": "测量距离示例",
+                  "value": {
+                    "name": "measure_distance",
+                    "arguments": {
+                      "marker1_name": "天府广场",
+                      "marker2_name": "春熙路",
+                      "unit": "km"
+                    }
+                  }
+                },
+                "measure_area": {
+                  "summary": "测量面积示例",
+                  "value": {
+                    "name": "measure_area",
+                    "arguments": {
+                      "drawing_id": "drawing_123",
+                      "unit": "km²"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "工具调用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolCallResponse"
+                },
+                "examples": {
+                  "success": {
+                    "summary": "成功响应示例",
+                    "value": {
+                      "success": true,
+                      "result": {
+                        "success": true,
+                        "marker": {
+                          "id": "agent_abc123",
+                          "name": "天安门广场",
+                          "coordinate": [116.3974, 39.9093]
+                        }
+                      },
+                      "message": "已在地图上添加标记点：天安门广场"
+                    }
+                  },
+                  "error": {
+                    "summary": "错误响应示例",
+                    "value": {
+                      "success": false,
+                      "result": null,
+                      "message": "工具调用失败：参数验证错误"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求参数错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string",
+                      "example": "未知的工具名称：invalid_tool"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务器内部错误",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detail": {
+                      "type": "string",
+                      "example": "工具调用失败：数据库连接错误"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "API Key for authentication. Default: dify-map-agent-key-2024"
+      }
+    },
+    "schemas": {
+      "ToolCallRequest": {
+        "type": "object",
+        "required": ["name", "arguments"],
+        "description": "工具调用请求",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "工具名称。支持的工具：add_map_marker（添加标记点）、search_and_locate（搜索位置）、switch_map_layer（切换图层）、add_map_drawing（添加绘制图形）、measure_distance（测量距离）、measure_area（测量面积）、add_map_measurement（添加测量结果）、clear_map_all（清除所有内容）、remove_map_drawing（删除绘制图形）、remove_map_measurement（删除测量结果）",
+            "enum": [
+              "add_map_marker",
+              "search_and_locate",
+              "switch_map_layer",
+              "add_map_drawing",
+              "measure_distance",
+              "measure_area",
+              "add_map_measurement",
+              "clear_map_all",
+              "remove_map_drawing",
+              "remove_map_measurement"
+            ],
+            "example": "add_map_marker"
+          },
+          "arguments": {
+            "type": "object",
+            "description": "工具参数，根据不同的工具名称，参数结构不同。详见各工具的说明。对于 search_and_locate，必须包含 'query' 字段（字符串类型）。",
+            "additionalProperties": true,
+            "properties": {
+              "query": {
+                "type": "string",
+                "description": "搜索关键词（仅用于 search_and_locate 工具）"
+              },
+              "zoom": {
+                "type": "integer",
+                "description": "缩放级别（仅用于 search_and_locate 工具）",
+                "minimum": 1,
+                "maximum": 20
+              },
+              "add_marker": {
+                "type": "boolean",
+                "description": "是否添加标记点（仅用于 search_and_locate 工具）"
+              },
+              "layer_type": {
+                "type": "string",
+                "enum": ["osm", "satellite", "terrain"],
+                "description": "图层类型（仅用于 switch_map_layer 工具）"
+              },
+              "name": {
+                "type": "string",
+                "description": "标记点名称（仅用于 add_map_marker 工具）"
+              },
+              "longitude": {
+                "type": "number",
+                "description": "经度（仅用于 add_map_marker 工具）",
+                "minimum": -180,
+                "maximum": 180
+              },
+              "latitude": {
+                "type": "number",
+                "description": "纬度（仅用于 add_map_marker 工具）",
+                "minimum": -90,
+                "maximum": 90
+              },
+              "marker1_name": {
+                "type": "string",
+                "description": "第一个位置的名称（仅用于 measure_distance 工具）"
+              },
+              "marker2_name": {
+                "type": "string",
+                "description": "第二个位置的名称（仅用于 measure_distance 工具）"
+              },
+              "marker1_id": {
+                "type": "string",
+                "description": "第一个标记点的ID（仅用于 measure_distance 工具）"
+              },
+              "marker2_id": {
+                "type": "string",
+                "description": "第二个标记点的ID（仅用于 measure_distance 工具）"
+              },
+              "point1": {
+                "type": "array",
+                "description": "第一个位置的坐标 [经度, 纬度]（仅用于 measure_distance 工具）",
+                "items": {"type": "number"},
+                "minItems": 2,
+                "maxItems": 2
+              },
+              "point2": {
+                "type": "array",
+                "description": "第二个位置的坐标 [经度, 纬度]（仅用于 measure_distance 工具）",
+                "items": {"type": "number"},
+                "minItems": 2,
+                "maxItems": 2
+              },
+              "unit": {
+                "type": "string",
+                "description": "单位（用于 measure_distance 和 measure_area 工具）",
+                "enum": ["m", "km", "mile", "m²", "km²", "hectare"]
+              },
+              "drawing_id": {
+                "type": "string",
+                "description": "绘制图形的ID（仅用于 measure_area 工具）"
+              },
+              "coordinates": {
+                "type": "array",
+                "description": "坐标列表（用于多个工具）",
+                "items": {
+                  "type": "array",
+                  "items": {"type": "number"},
+                  "minItems": 2,
+                  "maxItems": 2
+                }
+              }
+            },
+            "examples": {
+              "add_marker": {
+                "summary": "添加标记点参数",
+                "value": {
+                  "name": "天安门广场",
+                  "longitude": 116.3974,
+                  "latitude": 39.9093,
+                  "description": "北京市中心广场"
+                }
+              },
+              "search_location": {
+                "summary": "搜索位置参数",
+                "value": {
+                  "query": "北京市",
+                  "zoom": 15,
+                  "add_marker": true
+                }
+              },
+              "switch_layer": {
+                "summary": "切换图层参数",
+                "value": {
+                  "layer_type": "satellite"
+                }
+              },
+              "measure_distance": {
+                "summary": "测量距离参数",
+                "value": {
+                  "marker1_name": "天府广场",
+                  "marker2_name": "春熙路",
+                  "unit": "km"
+                }
+              },
+              "measure_area": {
+                "summary": "测量面积参数",
+                "value": {
+                  "drawing_id": "drawing_123",
+                  "unit": "km²"
+                }
+              }
+            }
+          }
+        }
+      },
+      "ToolCallResponse": {
+        "type": "object",
+        "description": "工具调用响应",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "工具调用是否成功",
+            "example": true
+          },
+          "result": {
+            "type": "object",
+            "description": "工具调用的结果数据，结构取决于调用的工具",
+            "additionalProperties": true
+          },
+          "message": {
+            "type": "string",
+            "description": "响应消息，描述操作结果",
+            "example": "已在地图上添加标记点：天安门广场"
+          }
+        },
+        "required": ["success"]
+      }
+    }
+  }
+}
+

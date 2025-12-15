@@ -1,0 +1,1051 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "地图操控 API v2",
+    "description": "提供地图标记、定位、绘制、测量等功能。每个工具都有独立的 endpoint，便于 Dify 生成 UI 并提高调用准确率。",
+    "version": "2.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://10.62.111.49:8000/api/v1/agent/map/v2",
+      "description": "地图 Agent API v2"
+    }
+  ],
+  "security": [
+    {
+      "ApiKeyAuth": []
+    }
+  ],
+  "paths": {
+    "/search_and_locate": {
+      "post": {
+        "summary": "搜索位置并在地图上标记",
+        "description": "搜索指定位置（城市、地址、地标等）并在地图上定位，同时添加标记点。这是标记位置的首选工具，适用于用户说'在XX地方标记一个点'的场景。",
+        "operationId": "searchAndLocate",
+        "tags": [
+          "位置搜索"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "query"
+                ],
+                "properties": {
+                  "query": {
+                    "type": "string",
+                    "description": "搜索关键词（城市、地址、地标等），例如：'天安门'、'北京市'、'天府广场'",
+                    "example": "天安门"
+                  },
+                  "zoom": {
+                    "type": "integer",
+                    "description": "缩放级别（1-20），默认15",
+                    "minimum": 1,
+                    "maximum": 20,
+                    "default": 15
+                  },
+                  "add_marker": {
+                    "type": "boolean",
+                    "description": "是否添加标记点，默认true",
+                    "default": true
+                  }
+                }
+              },
+              "examples": {
+                "basic": {
+                  "summary": "基本搜索",
+                  "value": {
+                    "query": "天安门"
+                  }
+                },
+                "with_zoom": {
+                  "summary": "指定缩放级别",
+                  "value": {
+                    "query": "北京市",
+                    "zoom": 10,
+                    "add_marker": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "搜索成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse"
+                },
+                "example": {
+                  "success": true,
+                  "data": {
+                    "id": "loc_1234567890",
+                    "name": "北京市东城区天安门",
+                    "coordinate": [
+                      116.397455,
+                      39.909187
+                    ],
+                    "type": "marker"
+                  },
+                  "metadata": {
+                    "marker_ids": [
+                      "loc_1234567890"
+                    ],
+                    "current_layer": "osm"
+                  },
+                  "message": "已定位到 北京市东城区天安门 并添加标记点"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "请求参数错误"
+          },
+          "404": {
+            "description": "未找到指定位置"
+          }
+        }
+      }
+    },
+    "/add_map_marker": {
+      "post": {
+        "summary": "添加地图标记点",
+        "description": "在地图上添加一个精确坐标的标记点。⚠️ 注意：此工具需要精确的经纬度坐标。如果用户只说位置名称（如'天安门'）而没有提供坐标，请使用 search_and_locate 工具。",
+        "operationId": "addMapMarker",
+        "tags": [
+          "标记点"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "longitude",
+                  "latitude"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "标记点名称",
+                    "example": "天安门广场"
+                  },
+                  "longitude": {
+                    "type": "number",
+                    "description": "经度（-180 到 180）",
+                    "minimum": -180,
+                    "maximum": 180,
+                    "example": 116.3974
+                  },
+                  "latitude": {
+                    "type": "number",
+                    "description": "纬度（-90 到 90）",
+                    "minimum": -90,
+                    "maximum": 90,
+                    "example": 39.9093
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "标记点描述（可选）",
+                    "example": "北京市中心广场"
+                  }
+                }
+              },
+              "example": {
+                "name": "天安门广场",
+                "longitude": 116.3974,
+                "latitude": 39.9093,
+                "description": "北京市中心广场"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "添加成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse"
+                },
+                "example": {
+                  "success": true,
+                  "data": {
+                    "id": "marker_abc123",
+                    "name": "天安门广场",
+                    "coordinate": [
+                      116.3974,
+                      39.9093
+                    ],
+                    "type": "marker"
+                  },
+                  "metadata": {
+                    "marker_ids": [
+                      "marker_abc123"
+                    ]
+                  },
+                  "message": "已在地图上添加标记点：天安门广场"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/switch_map_layer": {
+      "post": {
+        "summary": "切换地图图层",
+        "description": "切换地图图层类型（标准地图、卫星地图、路网地图）",
+        "operationId": "switchMapLayer",
+        "tags": [
+          "图层控制"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "layer_type"
+                ],
+                "properties": {
+                  "layer_type": {
+                    "type": "string",
+                    "enum": [
+                      "osm",
+                      "satellite",
+                      "terrain"
+                    ],
+                    "description": "图层类型：osm(标准地图)、satellite(卫星地图)、terrain(路网地图)",
+                    "example": "satellite"
+                  }
+                }
+              },
+              "example": {
+                "layer_type": "satellite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "切换成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse"
+                },
+                "example": {
+                  "success": true,
+                  "data": {
+                    "type": "layer",
+                    "name": "卫星地图"
+                  },
+                  "metadata": {
+                    "current_layer": "satellite"
+                  },
+                  "message": "已切换到卫星地图"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/measure_distance": {
+      "post": {
+        "summary": "测量两个位置之间的距离",
+        "description": "测量两个位置之间的距离。\n\n**使用场景：**\n- 用户说\"测量天府广场和春熙路的距离\"\n- 用户说\"这两个点之间有多远\"\n- 用户说\"从A到B有多少公里\"\n\n**参数选择优先级：**\n1. **优先使用名称**（marker1_name, marker2_name）- 如果用户提到地名，直接使用名称，系统会自动搜索并获取坐标\n2. **使用标记点ID**（marker1_id, marker2_id）- 如果地图上已有标记点，先调用 get_map_state 获取ID\n3. **使用坐标**（point1, point2）- 如果已有坐标，直接使用\n\n**典型流程：**\n1. 用户说\"测量天府广场和春熙路的距离\"\n2. 直接调用 measure_distance，marker1_name=\"天府广场\", marker2_name=\"春熙路\"\n3. 系统会自动搜索这两个位置并计算距离\n\n**或者：**\n1. 用户说\"测量这两个标记点的距离\"\n2. 先调用 get_map_state 查看有哪些标记点\n3. 使用返回的 marker_ids 调用 measure_distance",
+        "operationId": "measureDistance",
+        "tags": [
+          "测量工具"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "marker1_name": {
+                    "type": "string",
+                    "description": "第一个位置的名称（如'天府广场'）"
+                  },
+                  "marker2_name": {
+                    "type": "string",
+                    "description": "第二个位置的名称（如'春熙路'）"
+                  },
+                  "marker1_id": {
+                    "type": "string",
+                    "description": "第一个标记点的ID"
+                  },
+                  "marker2_id": {
+                    "type": "string",
+                    "description": "第二个标记点的ID"
+                  },
+                  "point1": {
+                    "type": "array",
+                    "description": "第一个位置的坐标 [经度, 纬度]",
+                    "items": {
+                      "type": "number"
+                    },
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "example": [
+                      116.3974,
+                      39.9093
+                    ]
+                  },
+                  "point2": {
+                    "type": "array",
+                    "description": "第二个位置的坐标 [经度, 纬度]",
+                    "items": {
+                      "type": "number"
+                    },
+                    "minItems": 2,
+                    "maxItems": 2,
+                    "example": [
+                      116.4074,
+                      39.9193
+                    ]
+                  },
+                  "unit": {
+                    "type": "string",
+                    "enum": [
+                      "m",
+                      "km",
+                      "mile"
+                    ],
+                    "description": "距离单位，默认km",
+                    "default": "km"
+                  }
+                }
+              },
+              "examples": {
+                "by_name": {
+                  "summary": "通过名称测量",
+                  "value": {
+                    "marker1_name": "天府广场",
+                    "marker2_name": "春熙路",
+                    "unit": "km"
+                  }
+                },
+                "by_coords": {
+                  "summary": "通过坐标测量",
+                  "value": {
+                    "point1": [
+                      116.3974,
+                      39.9093
+                    ],
+                    "point2": [
+                      116.4074,
+                      39.9193
+                    ],
+                    "unit": "km"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "测量成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse"
+                },
+                "example": {
+                  "success": true,
+                  "data": {
+                    "id": "dist_1234567890",
+                    "type": "measurement",
+                    "value": "1.40 km",
+                    "coordinate": [
+                      [
+                        116.3974,
+                        39.9093
+                      ],
+                      [
+                        116.4074,
+                        39.9193
+                      ]
+                    ]
+                  },
+                  "metadata": {
+                    "measurement_ids": [
+                      "dist_1234567890"
+                    ]
+                  },
+                  "message": "两点间距离为 1.40 km"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/measure_area": {
+      "post": {
+        "summary": "测量多边形区域的面积",
+        "description": "测量多边形区域的面积。\n\n**使用场景：**\n- 用户说\"测量这个区域的面积\"\n- 用户说\"这个多边形有多大\"\n- 用户说\"计算这个区域的面积\"\n\n**参数选择：**\n1. **使用 drawing_id** - 如果用户说\"测量这个绘制图形的面积\"，先调用 get_map_state 查看有哪些绘制图形，获取对应的 drawing_id\n2. **使用 coordinates** - 如果用户提供了坐标或地名，先搜索获取坐标，然后传入 coordinates\n\n**坐标格式：**\n- 多边形坐标列表：[[经度1, 纬度1], [经度2, 纬度2], ..., [经度1, 纬度1]]\n- 首尾坐标必须相同，形成闭合多边形\n- 至少需要3个不同的点（4个坐标，首尾重复）\n\n**典型流程：**\n1. 用户说\"测量天安门广场的面积\"\n2. 先调用 search_and_locate 获取天安门广场的坐标\n3. 根据坐标范围构建多边形坐标列表\n4. 调用 measure_area，传入 coordinates\n\n**或者：**\n1. 用户说\"测量这个绘制图形的面积\"\n2. 先调用 get_map_state 查看有哪些绘制图形\n3. 使用对应的 drawing_id 调用 measure_area",
+        "operationId": "measureArea",
+        "tags": [
+          "测量工具"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "drawing_id": {
+                    "type": "string",
+                    "description": "已绘制的多边形图形的ID"
+                  },
+                  "coordinates": {
+                    "type": "array",
+                    "description": "多边形的坐标列表 [[lon1, lat1], [lon2, lat2], ...]",
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "number"
+                      },
+                      "minItems": 2,
+                      "maxItems": 2
+                    },
+                    "minItems": 3
+                  },
+                  "unit": {
+                    "type": "string",
+                    "enum": [
+                      "m²",
+                      "km²",
+                      "hectare"
+                    ],
+                    "description": "面积单位，默认km²",
+                    "default": "km²"
+                  }
+                }
+              },
+              "example": {
+                "coordinates": [
+                  [
+                    116.3974,
+                    39.9093
+                  ],
+                  [
+                    116.4074,
+                    39.9093
+                  ],
+                  [
+                    116.4074,
+                    39.9193
+                  ],
+                  [
+                    116.3974,
+                    39.9193
+                  ],
+                  [
+                    116.3974,
+                    39.9093
+                  ]
+                ],
+                "unit": "km²"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "测量成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse"
+                },
+                "example": {
+                  "success": true,
+                  "data": {
+                    "id": "area_1234567890",
+                    "type": "measurement",
+                    "value": "0.9483 km²",
+                    "coordinate": [
+                      [
+                        116.3974,
+                        39.9093
+                      ],
+                      [
+                        116.4074,
+                        39.9093
+                      ],
+                      [
+                        116.4074,
+                        39.9193
+                      ],
+                      [
+                        116.3974,
+                        39.9193
+                      ],
+                      [
+                        116.3974,
+                        39.9093
+                      ]
+                    ]
+                  },
+                  "metadata": {
+                    "measurement_ids": [
+                      "area_1234567890"
+                    ]
+                  },
+                  "message": "区域面积为 0.9483 km²"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/add_map_drawing": {
+      "post": {
+        "summary": "在地图上绘制图形",
+        "description": "在地图上绘制图形（点、线、多边形、圆形）。\n\n**使用场景：**\n- 用户要求\"画一条线连接两个点\" → 使用 line 类型\n- 用户要求\"标记一个区域\" → 使用 polygon 类型\n- 用户要求\"画一个圆\" → 使用 circle 类型\n\n**坐标格式说明：**\n- point: [[经度, 纬度]]，例如：[[116.3974, 39.9093]]\n- line: [[经度1, 纬度1], [经度2, 纬度2], ...]，至少2个点\n- polygon: [[经度1, 纬度1], [经度2, 纬度2], ..., [经度1, 纬度1]]，首尾相同形成闭合\n- circle: [[圆心经度, 圆心纬度], [圆周上一点经度, 圆周上一点纬度]]\n\n**获取坐标的方法：**\n1. 如果用户提到地名，先使用 search_and_locate 获取坐标\n2. 如果地图上已有标记点，使用 get_map_state 查看标记点的坐标\n3. 如果用户提供坐标，直接使用\n\n**典型流程：**\n1. 用户说\"画一条线从天安门到故宫\"\n2. 先调用 search_and_locate(\"天安门\") 和 search_and_locate(\"故宫\") 获取坐标\n3. 然后调用 add_map_drawing，drawing_type=\"line\"，coordinates=[[天安门坐标], [故宫坐标]]",
+        "operationId": "addMapDrawing",
+        "tags": [
+          "绘制工具"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "drawing_type",
+                  "coordinates"
+                ],
+                "properties": {
+                  "drawing_type": {
+                    "type": "string",
+                    "enum": [
+                      "point",
+                      "line",
+                      "polygon",
+                      "circle"
+                    ],
+                    "description": "绘制类型：point(点)、line(线)、polygon(多边形)、circle(圆形)"
+                  },
+                  "coordinates": {
+                    "type": "array",
+                    "description": "坐标数组。point: [[lon, lat]]，line: [[lon1, lat1], [lon2, lat2], ...]，polygon: [[lon1, lat1], [lon2, lat2], ...]，circle: [[center_lon, center_lat], [point_on_circle_lon, point_on_circle_lat]]",
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "number"
+                      },
+                      "minItems": 2,
+                      "maxItems": 2
+                    }
+                  },
+                  "drawing_id": {
+                    "type": "string",
+                    "description": "绘制图形的ID（可选，系统自动生成）"
+                  }
+                }
+              },
+              "example": {
+                "drawing_type": "line",
+                "coordinates": [
+                  [
+                    116.3974,
+                    39.9093
+                  ],
+                  [
+                    116.4074,
+                    39.9193
+                  ]
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "绘制成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse"
+                },
+                "example": {
+                  "success": true,
+                  "data": {
+                    "id": "drawing_abc123",
+                    "type": "drawing",
+                    "coordinate": [
+                      [
+                        116.3974,
+                        39.9093
+                      ],
+                      [
+                        116.4074,
+                        39.9193
+                      ]
+                    ]
+                  },
+                  "metadata": {
+                    "drawing_ids": [
+                      "drawing_abc123"
+                    ]
+                  },
+                  "message": "已添加绘制图形"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/remove_map_drawing": {
+      "post": {
+        "summary": "删除指定的绘制图形",
+        "description": "根据绘制图形ID删除指定的绘制图形",
+        "operationId": "removeMapDrawing",
+        "tags": [
+          "绘制工具"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "drawing_id"
+                ],
+                "properties": {
+                  "drawing_id": {
+                    "type": "string",
+                    "description": "要删除的绘制图形ID",
+                    "example": "drawing_abc123"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "删除成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse"
+                },
+                "example": {
+                  "success": true,
+                  "data": {},
+                  "metadata": {
+                    "drawing_ids": []
+                  },
+                  "message": "已删除绘制图形：drawing_abc123"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/remove_map_measurement": {
+      "post": {
+        "summary": "删除指定的测量结果",
+        "description": "根据测量结果ID删除指定的测量结果",
+        "operationId": "removeMapMeasurement",
+        "tags": [
+          "测量工具"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "measurement_id"
+                ],
+                "properties": {
+                  "measurement_id": {
+                    "type": "string",
+                    "description": "要删除的测量结果ID",
+                    "example": "measurement_abc123"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "删除成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse"
+                },
+                "example": {
+                  "success": true,
+                  "data": {},
+                  "metadata": {
+                    "measurement_ids": []
+                  },
+                  "message": "已删除测量结果：measurement_abc123"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/clear_map_all": {
+      "post": {
+        "summary": "清除地图上的所有内容",
+        "description": "清除地图上的所有标记点、绘制图形和测量结果",
+        "operationId": "clearMapAll",
+        "tags": [
+          "地图管理"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {}
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "清除成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse"
+                },
+                "example": {
+                  "success": true,
+                  "data": {},
+                  "metadata": {
+                    "marker_ids": [],
+                    "drawing_ids": [],
+                    "measurement_ids": []
+                  },
+                  "message": "已清除地图上的所有内容"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/get_map_state": {
+      "get": {
+        "summary": "获取当前地图状态",
+        "description": "获取当前地图的完整状态，包括所有标记点、绘制图形、测量结果。\n\n**智能查询功能：**\n- 默认返回所有标记点（内存 + 数据库）\n- 支持参数控制查询范围\n- 支持按名称过滤\n\n**使用场景：**\n- 在测量距离/面积之前，先查看地图上有哪些标记点\n- 在删除资源之前，查看资源的ID\n- 了解当前地图的整体状态\n- 查询历史标记点\n\n**典型流程：**\n1. 用户说\"测量天府广场和春熙路的距离\"\n2. 先调用 get_map_state 查看是否有这两个标记点\n3. 如果没有，先调用 search_and_locate 添加标记点\n4. 然后调用 measure_distance 进行测量",
+        "operationId": "getMapState",
+        "tags": [
+          "地图状态"
+        ],
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "include_persistent",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true
+            },
+            "description": "是否包含数据库中的永久标记点（默认true）"
+          },
+          {
+            "name": "include_temporary",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true
+            },
+            "description": "是否包含内存中的临时标记点（默认true）"
+          },
+          {
+            "name": "name_filter",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "按名称过滤标记点（可选，支持模糊匹配）"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "获取成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandardResponse"
+                },
+                "example": {
+                  "success": true,
+                  "data": {
+                    "type": "state",
+                    "markers": [
+                      {
+                        "id": "loc_1234567890",
+                        "name": "天府广场",
+                        "coordinate": [
+                          104.066,
+                          30.572
+                        ],
+                        "description": ""
+                      }
+                    ],
+                    "markers_by_source": {
+                      "session": [
+                        {
+                          "id": "loc_1234567890",
+                          "name": "天府广场",
+                          "coordinate": [104.066, 30.572]
+                        }
+                      ],
+                      "persistent": [
+                        {
+                          "id": "loc_9876543210",
+                          "name": "春熙路",
+                          "coordinate": [104.081, 30.662]
+                        }
+                      ],
+                      "all": [
+                        {
+                          "id": "loc_1234567890",
+                          "name": "天府广场",
+                          "coordinate": [104.066, 30.572]
+                        },
+                        {
+                          "id": "loc_9876543210",
+                          "name": "春熙路",
+                          "coordinate": [104.081, 30.662]
+                        }
+                      ]
+                    },
+                    "drawings": [],
+                    "measurements": [],
+                    "current_layer": "osm",
+                    "center": [
+                      104.066,
+                      30.572
+                    ],
+                    "zoom": 10,
+                    "statistics": {
+                      "session_markers": 1,
+                      "persistent_markers": 1,
+                      "total_markers": 2,
+                      "drawings": 0,
+                      "measurements": 0
+                    }
+                  },
+                  "metadata": {
+                    "marker_ids": [
+                      "loc_1234567890",
+                      "loc_9876543210"
+                    ],
+                    "drawing_ids": [],
+                    "measurement_ids": [],
+                    "current_layer": "osm"
+                  },
+                  "message": "当前地图有 2 个标记点（会话: 1, 永久: 1），0 个绘制图形，0 个测量结果"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "API Key for authentication. Default: dify-map-agent-key-2024"
+      }
+    },
+    "schemas": {
+      "StandardResponse": {
+        "type": "object",
+        "description": "统一的响应结构，便于 LLM 记忆状态",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "操作是否成功",
+            "example": true
+          },
+          "data": {
+            "type": "object",
+            "description": "操作结果数据，结构固定",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "资源ID（如 marker_id, drawing_id, measurement_id），便于后续操作",
+                "example": "marker_abc123"
+              },
+              "name": {
+                "type": "string",
+                "description": "资源名称",
+                "example": "天安门广场"
+              },
+              "coordinate": {
+                "type": "array",
+                "description": "坐标 [经度, 纬度]",
+                "items": {
+                  "type": "number"
+                },
+                "example": [
+                  116.3974,
+                  39.9093
+                ]
+              },
+              "type": {
+                "type": "string",
+                "description": "资源类型（marker, drawing, measurement, layer）",
+                "example": "marker"
+              },
+              "value": {
+                "type": "string",
+                "description": "值（用于测量结果）",
+                "example": "1.40 km"
+              }
+            }
+          },
+          "metadata": {
+            "type": "object",
+            "description": "元数据，包含便于后续操作的信息",
+            "properties": {
+              "marker_ids": {
+                "type": "array",
+                "description": "所有标记点ID列表",
+                "items": {
+                  "type": "string"
+                },
+                "example": [
+                  "marker_1",
+                  "marker_2"
+                ]
+              },
+              "drawing_ids": {
+                "type": "array",
+                "description": "所有绘制图形ID列表",
+                "items": {
+                  "type": "string"
+                },
+                "example": [
+                  "drawing_1"
+                ]
+              },
+              "measurement_ids": {
+                "type": "array",
+                "description": "所有测量结果ID列表",
+                "items": {
+                  "type": "string"
+                },
+                "example": [
+                  "measurement_1"
+                ]
+              },
+              "current_layer": {
+                "type": "string",
+                "description": "当前地图图层类型",
+                "enum": [
+                  "osm",
+                  "satellite",
+                  "terrain"
+                ],
+                "example": "osm"
+              }
+            }
+          },
+          "message": {
+            "type": "string",
+            "description": "操作结果消息",
+            "example": "已在天安门广场添加标记点"
+          }
+        },
+        "required": [
+          "success"
+        ]
+      }
+    }
+  }
+}
