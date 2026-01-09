@@ -9,6 +9,7 @@ import {
 import { createFileRoute } from "@tanstack/react-router"
 import { useState } from "react"
 import { FiAlertCircle } from "react-icons/fi"
+import { OpenAPI } from "@/client"
 
 import WeatherSearch from "@/components/Weather/WeatherSearch"
 import WeatherDisplay from "@/components/Weather/WeatherDisplay"
@@ -60,9 +61,24 @@ function Weather() {
     setForecast(null)
 
     try {
+      // 构建 API base URL
+      let apiBase = OpenAPI.BASE || window.location.origin
+      // 修复端口：如果使用了错误的端口（8000），替换为正确的端口（8009）
+      if (apiBase.includes(':8000')) {
+        apiBase = apiBase.replace(':8000', ':8009')
+      }
+      // 如果当前页面在 5173 端口，后端应该在 8009 端口
+      if (window.location.origin.includes(':5173') && !apiBase.includes(':8009') && !apiBase.includes(':8000')) {
+        apiBase = window.location.origin.replace(':5173', ':8009')
+      }
+      // 确保包含 /api/v1
+      if (!apiBase.includes('/api/v1')) {
+        apiBase = apiBase.replace(/\/+$/, '') + '/api/v1'
+      }
+
       // 获取实时天气
       const currentResponse = await fetch(
-        `/api/v1/weather/current?city=${encodeURIComponent(city)}`
+        `${apiBase}/weather/current?city=${encodeURIComponent(city)}`
       )
       
       if (!currentResponse.ok) {
@@ -94,7 +110,7 @@ function Weather() {
 
       // 获取天气预报
       const forecastResponse = await fetch(
-        `/api/v1/weather/forecast?city=${encodeURIComponent(city)}`
+        `${apiBase}/weather/forecast?city=${encodeURIComponent(city)}`
       )
       
       if (forecastResponse.ok) {

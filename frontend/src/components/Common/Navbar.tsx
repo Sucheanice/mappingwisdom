@@ -20,7 +20,7 @@ function Navbar() {
       p={4}
     >
       <Link to="/">
-        <HStack spacing={2} p={2} _hover={{ opacity: 0.8 }}>
+        <HStack gap={2} p={2} _hover={{ opacity: 0.8 }}>
           <Image src={Logo} alt="Logo" h={8} w="auto" />
           <Text fontSize="xl" fontWeight="bold" color="black">
             测智慧

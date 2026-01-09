@@ -11,7 +11,12 @@ import { ApiError, OpenAPI } from "./client"
 import { CustomProvider } from "./components/ui/provider"
 import { routeTree } from "./routeTree.gen"
 
-OpenAPI.BASE = import.meta.env.VITE_API_URL
+// 设置 API base URL，优先使用服务器地址
+let apiBase = 'http://10.62.11.15:8009'  // 强制使用服务器地址
+console.log('🔧 main.tsx - 强制设置服务器API地址:', apiBase)
+OpenAPI.BASE = apiBase
+console.log('🔧 main.tsx - OpenAPI.BASE 设置为:', OpenAPI.BASE)
+
 OpenAPI.TOKEN = async () => {
   return localStorage.getItem("access_token") || ""
 }

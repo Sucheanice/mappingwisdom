@@ -1,7 +1,7 @@
-import { Box, Button, Card, Flex, Heading, HStack, IconButton, Input, Stack, Text, VStack, Spinner, Alert } from "@chakra-ui/react"
+import { Box, Button, Card, Flex, Heading, HStack, IconButton, Input, Stack, Text, VStack, Spinner } from "@chakra-ui/react"
 import { createFileRoute } from "@tanstack/react-router"
 import { useEffect, useRef, useState } from "react"
-import { FiZoomIn, FiZoomOut, FiRefreshCw, FiSearch, FiNavigation, FiTrash2, FiEye, FiEyeOff, FiSquare, FiCircle, FiMapPin } from "react-icons/fi"
+import { FiZoomIn, FiZoomOut, FiRefreshCw, FiSearch, FiNavigation, FiTrash2, FiSquare, FiCircle, FiMapPin } from "react-icons/fi"
 
 import { OpenAPI } from "@/client"
 import { MapClient } from "@/client/map"
@@ -31,17 +31,30 @@ function SmartMapPageThree() {
   const [markers, setMarkers] = useState<MapMarker[]>([])
   const [currentLayer, setCurrentLayer] = useState("osm")
   const [drawMode, setDrawMode] = useState<string | null>(null)
-  const [clearMode, setClearMode] = useState<string | null>(null)
+  // const [clearMode, setClearMode] = useState<string | null>(null) // 未使用，已注释
   const [measurements, setMeasurements] = useState<Array<{ id: string; type: string; value: string }>>([])
   const [mapInitialized, setMapInitialized] = useState(false)
   const [mapError, setMapError] = useState<string | null>(null)
 
-  // 确保 apiBase 包含 /api/v1 前缀
-  let apiBase = OpenAPI.BASE || `${window.location.origin}/api/v1`
-  // 如果 apiBase 不包含 /api/v1，则添加
-  if (apiBase && !apiBase.includes('/api/v1')) {
-    apiBase = apiBase.replace(/\/+$/, '') + '/api/v1'
+  // 使用 OpenAPI.BASE，它已经在登录时被正确设置
+  let apiBase = OpenAPI.BASE
+  console.log("🔧 smartMapThree - 使用 OpenAPI.BASE:", apiBase)
+
+  // 如果 OpenAPI.BASE 为空或不正确，尝试修复
+  if (!apiBase || apiBase.includes('localhost:8009') || apiBase.includes('localhost:8000')) {
+    apiBase = import.meta.env.VITE_API_URL || window.location.origin
+    // 修复端口：如果使用了错误的端口（8000），替换为正确的端口（8009）
+    if (apiBase.includes(':8000')) {
+      apiBase = apiBase.replace(':8000', ':8009')
+    }
+    // 如果当前页面在 5173 端口且 API base 没有指定端口，使用 8009
+    if (window.location.origin.includes(':5173') && !apiBase.includes(':8009') && !apiBase.includes(':8000')) {
+      apiBase = window.location.origin.replace(':5173', ':8009')
+    }
+    console.log("🔧 smartMapThree - 修复后的 apiBase:", apiBase)
   }
+
+  console.log("🔧 smartMapThree - 最终 apiBase:", apiBase)
   const mapApi = new MapClient(apiBase)
   const wsClient = new MapWebSocketClient(apiBase)
 
@@ -53,7 +66,6 @@ function SmartMapPageThree() {
         { default: Map },
         { default: View },
         { default: TileLayer },
-        { default: OSM },
         { default: XYZ },
         { default: VectorLayer },
         { default: VectorSource },
@@ -66,7 +78,6 @@ function SmartMapPageThree() {
         import("ol/Map.js"),
         import("ol/View.js"),
         import("ol/layer/Tile.js"),
-        import("ol/source/OSM.js"),
         import("ol/source/XYZ.js"),
         import("ol/layer/Vector.js"),
         import("ol/source/Vector.js"),
@@ -81,7 +92,7 @@ function SmartMapPageThree() {
 
       // 高德地图API Key - 从环境变量读取，如果没有则使用默认值（仅用于开发）
       // ⚠️ 警告：生产环境必须通过环境变量 VITE_AMAP_API_KEY 配置
-      const AMAP_KEY = import.meta.env.VITE_AMAP_API_KEY || "cbfcad74ad3ddfb72ba7770a8169cf36"
+      // const AMAP_KEY = import.meta.env.VITE_AMAP_API_KEY || "cbfcad74ad3ddfb72ba7770a8169cf36" // 未使用
       
       // 底图图层 - 使用高德地图瓦片服务
       // 高德地图标准地图
@@ -424,9 +435,9 @@ function SmartMapPageThree() {
       } catch (error: any) {
         let errorMsg = "未知错误"
         if (error?.code === 'ERR_NETWORK' || error?.message === 'Network Error') {
-          errorMsg = `无法连接到后端服务 (${apiBase}/map/state)。请确保：\n1. 后端服务正在运行（通常运行在 http://localhost:8000）\n2. 检查浏览器控制台的网络请求详情\n3. 如果是CORS错误，检查后端CORS配置`
+          errorMsg = `无法连接到后端服务 (${apiBase}/api/v1/map/state)。请确保：\n1. 后端服务正在运行（地址: ${OpenAPI.BASE || '未配置'}）\n2. 检查浏览器控制台的网络请求详情\n3. 如果是CORS错误，检查后端CORS配置`
         } else if (error?.response?.status === 404) {
-          errorMsg = `地图API端点不存在 (${apiBase}/map/state)，请检查后端路由配置`
+          errorMsg = `地图API端点不存在 (${apiBase}/api/v1/map/state)，请检查后端路由配置`
         } else if (error?.response?.status) {
           errorMsg = `后端返回错误 ${error.response.status}: ${error.response.statusText}`
         } else {
@@ -434,7 +445,7 @@ function SmartMapPageThree() {
         }
         console.error("加载初始地图状态失败:", error)
         console.error("API Base URL:", apiBase)
-        console.error("尝试访问的URL:", `${apiBase}/map/state`)
+        console.error("尝试访问的URL:", `${apiBase}/api/v1/map/state`)
         setMapError(`⚠️ 后端连接失败: ${errorMsg}\n\n地图仍可正常使用，但以下功能不可用：\n- 实时同步\n- 保存标记点状态`)
       }
 
@@ -1059,14 +1070,14 @@ function SmartMapPageThree() {
     })
   }
 
-  // 清除模式
-  const startClearing = (clearType: string) => {
-    setClearMode(clearType)
-  }
+  // 清除模式（当前未使用，但保留以备将来使用）
+  // const startClearing = (clearType: string) => {
+  //   setClearMode(clearType)
+  // }
 
-  const stopClearing = () => {
-    setClearMode(null)
-  }
+  // const stopClearing = () => {
+  //   setClearMode(null)
+  // }
 
   const clearAll = async () => {
     // 前端立即清除（提供即时反馈）
@@ -1181,7 +1192,7 @@ function SmartMapPageThree() {
           <Card.Body>
             <Heading size="sm" mb={2}>搜索位置</Heading>
             <HStack>
-              <Input value={searchValue} onChange={(e) => setSearchValue(e.target.value)} placeholder="输入城市或地标" size="sm" />
+              <Input value={searchValue} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchValue(e.target.value)} placeholder="输入城市或地标" size="sm" />
               <IconButton aria-label="搜索" size="sm" onClick={searchLocation}><FiSearch /></IconButton>
             </HStack>
           </Card.Body>

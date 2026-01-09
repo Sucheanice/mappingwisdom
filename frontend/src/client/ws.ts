@@ -12,24 +12,30 @@ export class MapWebSocketClient {
     // 优先使用传入 baseUrl，否则回退到 window.location.origin
     const provided = (baseUrl && baseUrl.length > 0) ? baseUrl : window.location.origin
 
-    let origin = window.location.origin
-    let apiPath = "/api/v1"
-
     try {
       const u = new URL(provided, window.location.origin)
-      origin = `${u.protocol}//${u.host}`
-      const segs = u.pathname.split("/").filter(Boolean)
-      const apiIndex = segs.findIndex((s) => s === "api")
-      if (apiIndex !== -1 && segs[apiIndex + 1]?.startsWith("v")) {
-        apiPath = `/${segs.slice(0, apiIndex + 2).join("/")}`
+      // 确保有正确的协议和主机
+      const protocol = u.protocol
+      const host = u.host
+
+      // 如果URL包含/api/v1，则移除它，因为我们要添加/ws/map
+      let pathname = u.pathname
+      if (pathname.includes('/api/v1')) {
+        pathname = pathname.replace('/api/v1', '')
       }
-    } catch {
-      // ignore, use defaults
+
+      // 构建基础URL
+      const baseUrlClean = `${protocol}//${host}${pathname}`.replace(/\/$/, '')
+
+      // 构建WebSocket URL
+      this.url = baseUrlClean.replace(/^http/, "ws") + "/api/v1/ws/map"
+    } catch (error) {
+      console.warn("WebSocket URL构建失败，使用默认值:", error)
+      // 回退到默认值
+      this.url = window.location.origin.replace(/^http/, "ws") + "/api/v1/ws/map"
     }
 
-    const httpBase = `${origin}${apiPath}`
-    const wsBase = httpBase.replace(/^http/, "ws")
-    this.url = `${wsBase}/ws/map`
+    console.log("WebSocket URL:", this.url)
   }
 
   connect() {

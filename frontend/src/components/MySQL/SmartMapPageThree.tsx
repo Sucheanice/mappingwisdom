@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { OpenAPI } from '@/client';
 import { Card, Row, Col, Button, Space, Typography, message, Input, Divider } from 'antd';
 import { 
   EnvironmentOutlined, 
@@ -57,7 +58,7 @@ const SmartMapPageThree: React.FC = () => {
   const [currentLayer, setCurrentLayer] = useState('osm');
   const [drawMode, setDrawMode] = useState<string | null>(null);
   const [clearMode, setClearMode] = useState<string | null>(null);
-  const [drawings, setDrawings] = useState<any[]>([]);
+  const [, setDrawings] = useState<any[]>([]);
   const [measurements, setMeasurements] = useState<Array<{id: string, type: string, value: string, geometry: any}>>([]);
   const [layerVisibility, setLayerVisibility] = useState<{[key: string]: boolean}>({
     osm: true,
@@ -71,6 +72,22 @@ const SmartMapPageThree: React.FC = () => {
   const [wsConnection, setWsConnection] = useState<WebSocket | null>(null);
   const [wsConnected, setWsConnected] = useState(false);
 
+  // 构建 API base URL
+  const getApiBase = () => {
+    let apiBase = OpenAPI.BASE || window.location.origin
+    // 修复端口：如果使用了错误的端口（8000），替换为正确的端口（8009）
+    if (apiBase.includes(':8000')) {
+      apiBase = apiBase.replace(':8000', ':8009')
+    }
+    // 如果当前页面在 5173 端口，后端应该在 8009 端口
+    if (window.location.origin.includes(':5173') && !apiBase.includes(':8009')) {
+      apiBase = window.location.origin.replace(':5173', ':8009')
+    }
+    return apiBase
+  }
+
+  const apiBase = getApiBase()
+
   // 设置地图光标样式
   const setCursor = (cursor: string) => {
     if (mapInstanceRef.current) {
@@ -83,7 +100,10 @@ const SmartMapPageThree: React.FC = () => {
   useEffect(() => {
     const connectWebSocket = () => {
       try {
-        const ws = new WebSocket('ws://localhost:8000/ws/map');
+        // 构建 WebSocket URL
+        const wsUrl = apiBase.replace(/^http/, 'ws') + '/api/v1/ws/map'
+        const ws = new WebSocket(wsUrl);
+        console.log('🔗 正在连接 WebSocket:', wsUrl);
         
         ws.onopen = () => {
           console.log('✅ WebSocket连接已建立');
@@ -133,7 +153,7 @@ const SmartMapPageThree: React.FC = () => {
         wsConnection.close();
       }
     };
-  }, []);
+  }, [apiBase]);
 
   // 处理WebSocket地图操作
   const handleMapAction = (data: any) => {
@@ -212,7 +232,7 @@ const SmartMapPageThree: React.FC = () => {
   const loadInitialMapState = async () => {
     try {
       console.log('🔍 从后端加载初始地图状态...');
-      const response = await fetch('http://localhost:8000/map/state');
+      const response = await fetch(`${apiBase}/api/v1/map/state`);
       const result = await response.json();
       
       if (result.success) {
@@ -532,7 +552,7 @@ const SmartMapPageThree: React.FC = () => {
 
     // 同步到后端（便于 Dify 访问与后续分析）
     try {
-      fetch('http://localhost:8000/map/action', {
+      fetch(`${apiBase}/api/v1/map/action`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -592,7 +612,7 @@ const SmartMapPageThree: React.FC = () => {
 
     try {
       // 先调用后端搜索 API，获取候选结果
-      const searchResp = await fetch(`http://localhost:8000/map/search?query=${encodeURIComponent(searchValue)}&limit=1`);
+      const searchResp = await fetch(`${apiBase}/api/v1/map/search?query=${encodeURIComponent(searchValue)}&limit=1`);
       if (!searchResp.ok) throw new Error('搜索服务暂时不可用');
       const searchJson = await searchResp.json();
 
@@ -608,7 +628,7 @@ const SmartMapPageThree: React.FC = () => {
       const locateName = top.name || searchValue;
 
       // 再调用定位 API（后端将返回动画与可选标记）
-      const locateResp = await fetch('http://localhost:8000/map/locate', {
+      const locateResp = await fetch(`${apiBase}/api/v1/map/locate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -712,7 +732,7 @@ const SmartMapPageThree: React.FC = () => {
 
       // 同步到后端
       try {
-        fetch('http://localhost:8000/map/action', {
+        fetch(`${apiBase}/api/v1/map/action`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'clear_markers' })
@@ -774,7 +794,7 @@ const SmartMapPageThree: React.FC = () => {
       }
     });
     
-    const drawingsLayer = mapInstanceRef.current.getLayers().getArray()[3] as VectorLayer;
+    const drawingsLayer = mapInstanceRef.current.getLayers().getArray()[3] as VectorLayer<Feature>;
     const drawingsSource = drawingsLayer.getSource() as VectorSource;
     
     let drawInteraction: Draw;
@@ -819,7 +839,7 @@ const SmartMapPageThree: React.FC = () => {
 
       // 从绘制图层中获取最新新增的要素并尝试序列化基本信息
       try {
-        const drawingsLayer = mapInstanceRef.current!.getLayers().getArray()[3] as VectorLayer;
+        const drawingsLayer = mapInstanceRef.current!.getLayers().getArray()[3] as VectorLayer<Feature>;
         const drawingsSource = drawingsLayer.getSource() as VectorSource;
         const features = drawingsSource.getFeatures();
         const last = features[features.length - 1];
@@ -848,7 +868,7 @@ const SmartMapPageThree: React.FC = () => {
             serialized.coordinates = [center];
           }
 
-          fetch('http://localhost:8000/map/action', {
+          fetch(`${apiBase}/api/v1/map/action`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ action: 'add_drawing', data: { drawing: serialized } })
@@ -907,12 +927,12 @@ const SmartMapPageThree: React.FC = () => {
       }
       
       // 清除绘制图形
-      const drawingsLayer = mapInstanceRef.current.getLayers().getArray()[4] as VectorLayer;
+      const drawingsLayer = mapInstanceRef.current.getLayers().getArray()[4] as VectorLayer<Feature>;
       const drawingsSource = drawingsLayer.getSource() as VectorSource;
       drawingsSource.clear();
       
       // 清除测量结果
-      const measurementsLayer = mapInstanceRef.current.getLayers().getArray()[5] as VectorLayer;
+      const measurementsLayer = mapInstanceRef.current.getLayers().getArray()[5] as VectorLayer<Feature>;
       const measurementsSource = measurementsLayer.getSource() as VectorSource;
       measurementsSource.clear();
       setMeasurements([]);
@@ -921,7 +941,7 @@ const SmartMapPageThree: React.FC = () => {
 
       // 同步到后端
       try {
-        fetch('http://localhost:8000/map/action', {
+        fetch(`${apiBase}/api/v1/map/action`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'clear_all' })
@@ -960,7 +980,7 @@ const SmartMapPageThree: React.FC = () => {
         });
       } else if (clearMode === 'drawings') {
         // 清除绘制图形
-        const drawingsLayer = mapInstanceRef.current.getLayers().getArray()[4] as VectorLayer;
+        const drawingsLayer = mapInstanceRef.current.getLayers().getArray()[4] as VectorLayer<Feature>;
         const drawingsSource = drawingsLayer.getSource() as VectorSource;
         const features = drawingsSource.getFeatures();
         features.forEach(feature => {
@@ -976,7 +996,7 @@ const SmartMapPageThree: React.FC = () => {
         });
       } else if (clearMode === 'measurements') {
         // 清除测量结果
-        const measurementsLayer = mapInstanceRef.current.getLayers().getArray()[5] as VectorLayer;
+        const measurementsLayer = mapInstanceRef.current.getLayers().getArray()[5] as VectorLayer<Feature>;
         const measurementsSource = measurementsLayer.getSource() as VectorSource;
         const features = measurementsSource.getFeatures();
         features.forEach(feature => {
@@ -1007,7 +1027,7 @@ const SmartMapPageThree: React.FC = () => {
   const startMeasuring = (measureType: string) => {
     if (!mapInstanceRef.current) return;
     
-    const measurementsLayer = mapInstanceRef.current.getLayers().getArray()[4] as VectorLayer;
+    const measurementsLayer = mapInstanceRef.current.getLayers().getArray()[4] as VectorLayer<Feature>;
     const measurementsSource = measurementsLayer.getSource() as VectorSource;
     
     let drawInteraction: Draw;
@@ -1076,7 +1096,7 @@ const SmartMapPageThree: React.FC = () => {
           const rings = (geometry as Polygon).getCoordinates()[0] || [];
           serialized.coordinates = (rings as any[]).map((c: any) => toLonLat(c));
         }
-        fetch('http://localhost:8000/map/action', {
+        fetch(`${apiBase}/api/v1/map/action`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'add_measurement', data: { measurement: serialized } })
@@ -1090,7 +1110,7 @@ const SmartMapPageThree: React.FC = () => {
     if (!mapInstanceRef.current) return;
     
     try {
-      const measurementsLayer = mapInstanceRef.current.getLayers().getArray()[5] as VectorLayer;
+      const measurementsLayer = mapInstanceRef.current.getLayers().getArray()[5] as VectorLayer<Feature>;
       const measurementsSource = measurementsLayer.getSource() as VectorSource;
       measurementsSource.clear();
       setMeasurements([]);
@@ -1098,7 +1118,7 @@ const SmartMapPageThree: React.FC = () => {
 
       // 同步到后端
       try {
-        fetch('http://localhost:8000/map/action', {
+        fetch(`${apiBase}/api/v1/map/action`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'clear_measurements' })
@@ -1143,7 +1163,7 @@ const SmartMapPageThree: React.FC = () => {
       message.loading(`正在定位到${cityName}...`, 0);
       
       // 先搜索，确认名称与可达性
-      const searchResp = await fetch(`http://localhost:8000/map/search?query=${encodeURIComponent(cityName)}&limit=1`);
+      const searchResp = await fetch(`${apiBase}/api/v1/map/search?query=${encodeURIComponent(cityName)}&limit=1`);
       if (!searchResp.ok) throw new Error('搜索服务暂时不可用');
       const searchJson = await searchResp.json();
 
@@ -1156,7 +1176,7 @@ const SmartMapPageThree: React.FC = () => {
       const locateName = (searchJson.results[0] && searchJson.results[0].name) || cityName;
 
       // 再定位
-      const response = await fetch('http://localhost:8000/map/locate', {
+      const response = await fetch(`${apiBase}/api/v1/map/locate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1285,7 +1305,7 @@ const SmartMapPageThree: React.FC = () => {
                 <Input.Search
                   placeholder="输入城市名或地址（如：成都、北京天安门）"
                   value={searchValue}
-                  onChange={(e) => setSearchValue(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchValue(e.target.value)}
                   onSearch={searchLocation}
                   enterButton={<SearchOutlined />}
                   disabled={!mapLoaded}

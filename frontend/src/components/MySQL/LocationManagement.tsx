@@ -9,10 +9,10 @@ import {
   Text,
   VStack,
   HStack,
-  Badge,
 } from "@chakra-ui/react"
 import { useState, useEffect } from "react"
 import { FiSearch, FiRefreshCw } from "react-icons/fi"
+import { OpenAPI } from "@/client"
 
 import AddLocationDialog from "./AddLocationDialog"
 import EditLocationButton from "./EditLocationButton"
@@ -51,6 +51,20 @@ const LocationManagement = () => {
 
   const pageSize = 10
 
+  // 构建 API base URL
+  const getApiBase = () => {
+    let apiBase = OpenAPI.BASE || window.location.origin
+    // 修复端口：如果使用了错误的端口（8000），替换为正确的端口（8009）
+    if (apiBase.includes(':8000')) {
+      apiBase = apiBase.replace(':8000', ':8009')
+    }
+    // 如果当前页面在 5173 端口，后端应该在 8009 端口
+    if (window.location.origin.includes(':5173') && !apiBase.includes(':8009')) {
+      apiBase = window.location.origin.replace(':5173', ':8009')
+    }
+    return apiBase
+  }
+
   // 获取位置上报列表
   const fetchLocations = async () => {
     setLoading(true)
@@ -65,7 +79,8 @@ const LocationManagement = () => {
       if (startDate) params.append("start_date", startDate)
       if (endDate) params.append("end_date", endDate)
 
-      const response = await fetch(`/api/v1/mysql/locations?${params}`)
+      const apiBase = getApiBase()
+      const response = await fetch(`${apiBase}/api/v1/mysql/locations?${params}`)
       if (response.ok) {
         const data = await response.json()
         setLocations(data)
@@ -86,7 +101,8 @@ const LocationManagement = () => {
       if (startDate) params.append("start_date", startDate)
       if (endDate) params.append("end_date", endDate)
 
-      const response = await fetch(`/api/v1/mysql/locations/count?${params}`)
+      const apiBase = getApiBase()
+      const response = await fetch(`${apiBase}/api/v1/mysql/locations/count?${params}`)
       if (response.ok) {
         const data = await response.json()
         setTotalCount(data.count)

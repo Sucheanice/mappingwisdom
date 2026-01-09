@@ -8,6 +8,7 @@ import {
 import { useState, useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { FiEdit, FiSearch } from "react-icons/fi"
+import { OpenAPI } from "@/client"
 
 import {
   DialogActionTrigger,
@@ -48,6 +49,20 @@ const EditStoreLocationButton = ({ location, onSuccess }: EditStoreLocationButto
   const [loading, setLoading] = useState(false)
   const [searching, setSearching] = useState(false)
 
+  // 构建 API base URL
+  const getApiBase = () => {
+    let apiBase = OpenAPI.BASE || window.location.origin
+    // 修复端口：如果使用了错误的端口（8000），替换为正确的端口（8009）
+    if (apiBase.includes(':8000')) {
+      apiBase = apiBase.replace(':8000', ':8009')
+    }
+    // 如果当前页面在 5173 端口，后端应该在 8009 端口
+    if (window.location.origin.includes(':5173') && !apiBase.includes(':8009')) {
+      apiBase = window.location.origin.replace(':5173', ':8009')
+    }
+    return apiBase
+  }
+
   const {
     register,
     handleSubmit,
@@ -69,7 +84,8 @@ const EditStoreLocationButton = ({ location, onSuccess }: EditStoreLocationButto
 
     setSearching(true)
     try {
-      const response = await fetch("/api/v1/weather/geocode", {
+      const apiBase = getApiBase()
+      const response = await fetch(`${apiBase}/api/v1/weather/geocode`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -120,7 +136,8 @@ const EditStoreLocationButton = ({ location, onSuccess }: EditStoreLocationButto
   const onSubmit = async (data: StoreLocationFormData) => {
     setLoading(true)
     try {
-      const response = await fetch(`/api/v1/mysql/store-locations/${location.id}`, {
+      const apiBase = getApiBase()
+      const response = await fetch(`${apiBase}/api/v1/mysql/store-locations/${location.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

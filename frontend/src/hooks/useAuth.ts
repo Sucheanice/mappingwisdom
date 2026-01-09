@@ -9,6 +9,7 @@ import {
   type UserPublic,
   type UserRegister,
   UsersService,
+  OpenAPI,
 } from "@/client"
 import { handleError } from "@/utils"
 
@@ -51,6 +52,11 @@ const useAuth = () => {
   const loginMutation = useMutation({
     mutationFn: login,
     onSuccess: () => {
+      // 登录成功后强制设置正确的服务器API地址
+      const serverApiUrl = 'http://10.62.11.15:8009'
+      OpenAPI.BASE = serverApiUrl
+      console.log('🔐 登录成功后强制设置 OpenAPI.BASE:', OpenAPI.BASE)
+
       navigate({ to: "/" })
     },
     onError: (err: ApiError) => {

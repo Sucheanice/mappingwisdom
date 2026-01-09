@@ -65,7 +65,7 @@ function SignUp() {
         gap={4}
         centerContent
       >
-        <HStack spacing={3} alignSelf="center" mb={4}>
+        <HStack gap={3} alignSelf="center" mb={4}>
           <Image src={Logo} alt="Logo" h={12} w="auto" />
           <Text fontSize="3xl" fontWeight="bold" color="black">
             测智慧

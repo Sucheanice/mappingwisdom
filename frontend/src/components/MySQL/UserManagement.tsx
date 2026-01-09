@@ -13,6 +13,7 @@ import {
 } from "@chakra-ui/react"
 import { useState, useEffect } from "react"
 import { FiSearch, FiRefreshCw } from "react-icons/fi"
+import { OpenAPI } from "@/client"
 
 import AddUserDialog from "./AddUserDialog"
 import EditUserButton from "./EditUserButton"
@@ -49,6 +50,20 @@ const UserManagement = () => {
 
   const pageSize = 10
 
+  // 构建 API base URL
+  const getApiBase = () => {
+    let apiBase = OpenAPI.BASE || window.location.origin
+    // 修复端口：如果使用了错误的端口（8000），替换为正确的端口（8009）
+    if (apiBase.includes(':8000')) {
+      apiBase = apiBase.replace(':8000', ':8009')
+    }
+    // 如果当前页面在 5173 端口，后端应该在 8009 端口
+    if (window.location.origin.includes(':5173') && !apiBase.includes(':8009')) {
+      apiBase = window.location.origin.replace(':5173', ':8009')
+    }
+    return apiBase
+  }
+
   // 获取用户列表
   const fetchUsers = async () => {
     setLoading(true)
@@ -61,7 +76,8 @@ const UserManagement = () => {
       if (searchTerm) params.append("search", searchTerm)
       if (statusFilter !== null) params.append("status", statusFilter.toString())
 
-      const response = await fetch(`/api/v1/mysql/users?${params}`)
+      const apiBase = getApiBase()
+      const response = await fetch(`${apiBase}/api/v1/mysql/users?${params}`)
       if (response.ok) {
         const data = await response.json()
         setUsers(data)
@@ -80,7 +96,8 @@ const UserManagement = () => {
       if (searchTerm) params.append("search", searchTerm)
       if (statusFilter !== null) params.append("status", statusFilter.toString())
 
-      const response = await fetch(`/api/v1/mysql/users/count?${params}`)
+      const apiBase = getApiBase()
+      const response = await fetch(`${apiBase}/api/v1/mysql/users/count?${params}`)
       if (response.ok) {
         const data = await response.json()
         setTotalCount(data.count)

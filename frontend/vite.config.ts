@@ -17,12 +17,13 @@ export default defineConfig({
     }),
     react(),
   ],
-  server: {
-    proxy: {
-      "/api": {
-        target: "http://localhost:8000",
-        changeOrigin: true,
-      },
-    },
-  },
+  // 移除代理配置，让前端直接调用服务器API
+  // server: {
+  //   proxy: {
+  //     "/api": {
+  //       target: "http://localhost:8000",
+  //       changeOrigin: true,
+  //     },
+  //   },
+  // },
 })

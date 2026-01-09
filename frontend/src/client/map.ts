@@ -4,47 +4,47 @@ export class MapClient {
   constructor(private readonly baseUrl: string) {}
 
   async getState() {
-    const { data } = await axios.get(`${this.baseUrl}/map/state`)
+    const { data } = await axios.get(`${this.baseUrl}/api/v1/map/state`)
     return data
   }
 
   async addMarker(marker: { id: string; name: string; coordinate: [number, number]; description?: string }) {
-    const { data } = await axios.post(`${this.baseUrl}/map/markers`, marker)
+    const { data } = await axios.post(`${this.baseUrl}/api/v1/map/markers`, marker)
     return data
   }
 
   async locate(body: { query: string; zoom?: number; add_marker?: boolean }) {
-    const { data } = await axios.post(`${this.baseUrl}/map/locate`, body)
+    const { data } = await axios.post(`${this.baseUrl}/api/v1/map/locate`, body)
     return data
   }
 
   async switchLayer(layerType: "osm" | "satellite" | "terrain") {
-    const { data } = await axios.post(`${this.baseUrl}/map/layer`, { layer_type: layerType })
+    const { data } = await axios.post(`${this.baseUrl}/api/v1/map/layer`, { layer_type: layerType })
     return data
   }
 
   async addMeasurement(measurement: { id: string; type: string; value: string; coordinates: any[] }) {
-    const { data } = await axios.post(`${this.baseUrl}/map/measurements`, measurement)
+    const { data } = await axios.post(`${this.baseUrl}/api/v1/map/measurements`, measurement)
     return data
   }
 
   async addDrawing(drawing: { id: string; type: string; coordinates: any[]; style?: any }) {
-    const { data } = await axios.post(`${this.baseUrl}/map/drawings`, drawing)
+    const { data } = await axios.post(`${this.baseUrl}/api/v1/map/drawings`, drawing)
     return data
   }
 
   async clearAll() {
-    const { data } = await axios.post(`${this.baseUrl}/map/clear-all`)
+    const { data } = await axios.post(`${this.baseUrl}/api/v1/map/clear-all`)
     return data
   }
 
   async deleteMeasurement(measurementId: string) {
-    const { data } = await axios.delete(`${this.baseUrl}/map/measurements/${measurementId}`)
+    const { data } = await axios.delete(`${this.baseUrl}/api/v1/map/measurements/${measurementId}`)
     return data
   }
 
   async deleteDrawing(drawingId: string) {
-    const { data } = await axios.delete(`${this.baseUrl}/map/drawings/${drawingId}`)
+    const { data } = await axios.delete(`${this.baseUrl}/api/v1/map/drawings/${drawingId}`)
     return data
   }
 }

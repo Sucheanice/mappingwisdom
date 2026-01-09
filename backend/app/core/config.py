@@ -61,7 +61,7 @@ class Settings(BaseSettings):
     MYSQL_SERVER: str = "localhost"
     MYSQL_PORT: int = 3306
     MYSQL_USER: str = "root"
-    MYSQL_PASSWORD: str = ""  # 必须通过环境变量设置，不要使用默认值
+    MYSQL_PASSWORD: str = "123456"  # 必须通过环境变量设置，不要使用默认值
     MYSQL_DB: str = "mappingwisdom"
 
     @computed_field  # type: ignore[prop-decorator]

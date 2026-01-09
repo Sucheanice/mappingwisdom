@@ -71,6 +71,17 @@ function SafeAlertAgent() {
   if (apiBase && !apiBase.includes('/api/v1')) {
     apiBase = apiBase.replace(/\/+$/, '') + '/api/v1'
   }
+  // 修复端口：如果环境变量未设置或使用了错误的端口，使用当前页面的 origin
+  if (!OpenAPI.BASE || OpenAPI.BASE.includes(':8000')) {
+    // 如果 OpenAPI.BASE 未设置或使用了 8000 端口，使用当前页面的 origin
+    const currentOrigin = window.location.origin
+    // 如果当前页面在 5173 端口，后端应该在 8009 端口
+    if (currentOrigin.includes(':5173')) {
+      apiBase = currentOrigin.replace(':5173', ':8009') + '/api/v1'
+    } else {
+      apiBase = currentOrigin + '/api/v1'
+    }
+  }
   // 调试：输出 apiBase 的值
   console.log("safeAlertAgent - apiBase:", apiBase)
   console.log("safeAlertAgent - OpenAPI.BASE:", OpenAPI.BASE)

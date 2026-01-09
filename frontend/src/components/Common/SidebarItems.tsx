@@ -27,15 +27,15 @@ const menuGroups: MenuGroup[] = [
     items: [
       { icon: FiCloud, title: "天气查询", path: "/weather" },
       { icon: FiAlertTriangle, title: "安全提醒", path: "/safeAlertAgent" },
-      { icon: FiMap, title: "Smart Map 3", path: "/smartMapThree" },
+      { icon: FiMap, title: "智慧地图", path: "/smartMapThree" },
     ],
   },
   {
     title: "人员管理",
     icon: FiUsers,
     items: [
-      { icon: FiDatabase, title: "用户管理", path: "/mysqlUsers" },
-      { icon: FiMapPin, title: "位置上报", path: "/mysqlLocations" },
+      { icon: FiDatabase, title: "外业用户管理", path: "/mysqlUsers" },
+      { icon: FiMapPin, title: "外业位置上报", path: "/mysqlLocations" },
     ],
   },
 ]

@@ -1,45 +1,32 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Card, Row, Col, Button, Space, Typography, message, Input, Divider, Select, Tag, Tooltip, Badge, Statistic, notification } from 'antd';
+import { OpenAPI } from '@/client';
+import { Card, Row, Col, Button, Space, Typography, message, Input, Divider, Select, Tag, notification } from 'antd';
 import { 
   EnvironmentOutlined, 
   ZoomInOutlined, 
   ZoomOutOutlined, 
   ReloadOutlined,
   SearchOutlined,
-  PlusOutlined,
-  MinusOutlined,
-  AimOutlined,
-  DeleteOutlined,
-  ToolOutlined,
-  EditOutlined as DrawIcon,
-  EyeOutlined,
-  EyeInvisibleOutlined,
-  StopOutlined,
   SafetyOutlined,
-  WarningOutlined,
   UserOutlined,
-  ClockCircleOutlined,
-  GlobalOutlined,
   CloudOutlined,
-  BellOutlined
+  BellOutlined,
+  EyeOutlined,
+  EyeInvisibleOutlined
 } from '@ant-design/icons';
 import Map from 'ol/Map';
 import View from 'ol/View';
 import TileLayer from 'ol/layer/Tile';
-import OSM from 'ol/source/OSM';
 import XYZ from 'ol/source/XYZ';
-import { fromLonLat, toLonLat } from 'ol/proj';
+import { fromLonLat } from 'ol/proj';
 import { defaults as defaultControls, FullScreen, ScaleLine } from 'ol/control';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import Feature from 'ol/Feature';
 import Point from 'ol/geom/Point';
-import LineString from 'ol/geom/LineString';
-import Polygon from 'ol/geom/Polygon';
 import { Style, Circle as StyleCircle, Fill, Stroke, Text as OlText } from 'ol/style';
-import { Draw, Modify } from 'ol/interaction';
-import Snap from 'ol/interaction/Snap';
-import { getLength, getArea } from 'ol/sphere';
+// import { Draw, Modify } from 'ol/interaction'; // 未使用
+// import { getLength, getArea } from 'ol/sphere'; // 未使用
 import 'ol/ol.css';
 import dayjs from 'dayjs';
 
@@ -87,7 +74,7 @@ const SafeAlertAgent: React.FC = () => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<Map | null>(null);
   const vectorSourceRef = useRef<VectorSource | null>(null);
-  const [mapLoaded, setMapLoaded] = useState(false);
+  const [, setMapLoaded] = useState(false);
   const [locationReports, setLocationReports] = useState<LocationReport[]>([]);
   const [filteredReports, setFilteredReports] = useState<LocationReport[]>([]);
   const [loading, setLoading] = useState(false);
@@ -97,7 +84,7 @@ const SafeAlertAgent: React.FC = () => {
   const [searchText, setSearchText] = useState('');
   const [showMarkers, setShowMarkers] = useState(true);
   const [markers, setMarkers] = useState<MapMarker[]>([]);
-  const [selectedMarker, setSelectedMarker] = useState<MapMarker | null>(null);
+  const [, setSelectedMarker] = useState<MapMarker | null>(null);
   const [updatingWeather, setUpdatingWeather] = useState(false);
   const [showWeatherLayer, setShowWeatherLayer] = useState(false);
   const [weatherLayer, setWeatherLayer] = useState<any>(null);
@@ -107,7 +94,7 @@ const SafeAlertAgent: React.FC = () => {
   const [isSimulationEnabled, setIsSimulationEnabled] = useState(false);
   const [weatherAlerts, setWeatherAlerts] = useState<any[]>([]);
   const [websocket, setWebsocket] = useState<WebSocket | null>(null);
-  const [refreshTimer, setRefreshTimer] = useState<number | null>(null);
+  const [refreshTimer, setRefreshTimer] = useState<ReturnType<typeof setInterval> | null>(null);
   const [websocketStatus, setWebsocketStatus] = useState<string>('未连接');
 
   // WebSocket连接
@@ -116,8 +103,18 @@ const SafeAlertAgent: React.FC = () => {
       websocket.close();
     }
     
+    // 构建 WebSocket URL，使用 OpenAPI.BASE 或当前页面的 origin
+    let wsBase = OpenAPI.BASE || window.location.origin
+    // 修复端口：如果使用了错误的端口（8000），替换为正确的端口（8009）
+    if (wsBase.includes(':8000')) {
+      wsBase = wsBase.replace(':8000', ':8009')
+    }
+    // 转换为 WebSocket URL
+    const wsUrl = wsBase.replace(/^http/, 'ws') + '/api/v1/simulation/weather-alerts'
+    
     console.log('🔗 正在建立WebSocket连接...');
-    const ws = new WebSocket('ws://localhost:8000/api/simulation/weather-alerts');
+    console.log('WebSocket URL:', wsUrl);
+    const ws = new WebSocket(wsUrl);
     
     ws.onopen = () => {
       console.log('🌐 WebSocket连接已建立');
@@ -272,6 +269,20 @@ const SafeAlertAgent: React.FC = () => {
     fetchLocationReports();
   };
 
+  // 构建 API base URL
+  const getApiBase = () => {
+    let apiBase = OpenAPI.BASE || window.location.origin
+    // 修复端口：如果使用了错误的端口（8000），替换为正确的端口（8009）
+    if (apiBase.includes(':8000')) {
+      apiBase = apiBase.replace(':8000', ':8009')
+    }
+    // 如果当前页面在 5173 端口，后端应该在 8009 端口
+    if (window.location.origin.includes(':5173') && !apiBase.includes(':8009')) {
+      apiBase = window.location.origin.replace(':5173', ':8009')
+    }
+    return apiBase
+  }
+
   // 获取位置上报数据
   const fetchLocationReports = async () => {
     setLoading(true);
@@ -280,8 +291,9 @@ const SafeAlertAgent: React.FC = () => {
       if (selectedUser) params.append('username', selectedUser);
       if (selectedSource) params.append('source', selectedSource);
       if (selectedProvince) params.append('province', selectedProvince);
-      
-      const response = await fetch(`/api/location/reports?${params.toString()}`);
+
+      const apiBase = getApiBase()
+      const response = await fetch(`${apiBase}/api/v1/mysql/locations?${params.toString()}`);
       if (response.ok) {
         const data = await response.json();
         setLocationReports(data);
@@ -526,7 +538,8 @@ const SafeAlertAgent: React.FC = () => {
   const updateWeatherInfo = async () => {
     setUpdatingWeather(true);
     try {
-      const response = await fetch('/api/location/reports/batch-update-weather', {
+      const apiBase = getApiBase()
+      const response = await fetch(`${apiBase}/api/v1/mysql/locations/batch-update-weather`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -574,7 +587,8 @@ const SafeAlertAgent: React.FC = () => {
     try {
       if (!isSimulationEnabled) {
         // 启用实时监控
-        const response = await fetch('/api/simulation/toggle', {
+        const apiBase = getApiBase()
+        const response = await fetch(`${apiBase}/api/v1/simulation/toggle`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -586,7 +600,7 @@ const SafeAlertAgent: React.FC = () => {
         });
         
         if (response.ok) {
-          const result = await response.json();
+          await response.json(); // result 未使用
           setIsSimulationEnabled(true);
           message.success(`实时监控已启用，模式: ${simulationMode}，每10秒自动更新`);
           
@@ -654,7 +668,8 @@ const SafeAlertAgent: React.FC = () => {
         }
       } else {
         // 禁用实时监控
-        const response = await fetch('/api/simulation/toggle', {
+        const apiBase = getApiBase()
+        const response = await fetch(`${apiBase}/api/v1/simulation/toggle`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -693,7 +708,8 @@ const SafeAlertAgent: React.FC = () => {
   // 启动实时监控
   const batchSimulateWeather = async () => {
     try {
-      const response = await fetch('/api/simulation/reports/batch-simulate-weather', {
+      const apiBase = getApiBase()
+      const response = await fetch(`${apiBase}/api/v1/simulation/reports/batch-simulate-weather`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -721,7 +737,8 @@ const SafeAlertAgent: React.FC = () => {
     
     try {
       // 调用短信发送API
-      const response = await fetch('/api/sms/send-location-notification', {
+      const apiBase = getApiBase()
+      const response = await fetch(`${apiBase}/api/v1/sms/send-location-notification`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -815,15 +832,15 @@ const SafeAlertAgent: React.FC = () => {
         zIndex: 1
       });
       
-      // 如果天地图不可用，使用简单的云层效果
-      const simpleWeatherLayer = new TileLayer({
-        source: new XYZ({
-          url: 'https://tile.openweathermap.org/map/clouds_new/{z}/{x}/{y}.png?appid=你的OpenWeatherMap_key',
-          crossOrigin: 'anonymous'
-        }),
-        opacity: 0.5,
-        zIndex: 1
-      });
+      // 如果天地图不可用，使用简单的云层效果（备用，当前未使用）
+      // const simpleWeatherLayer = new TileLayer({
+      //   source: new XYZ({
+      //     url: 'https://tile.openweathermap.org/map/clouds_new/{z}/{x}/{y}.png?appid=你的OpenWeatherMap_key',
+      //     crossOrigin: 'anonymous'
+      //   }),
+      //   opacity: 0.5,
+      //   zIndex: 1
+      // });
       
       // 添加天气图层
       try {
@@ -928,8 +945,8 @@ const SafeAlertAgent: React.FC = () => {
               <Input
                 placeholder="搜索用户、地址或设备"
                 allowClear
-                onChange={(e) => handleSearch(e.target.value)}
-                onPressEnter={(e) => handleSearch((e.target as HTMLInputElement).value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleSearch(e.target.value)}
+                onPressEnter={(e: React.KeyboardEvent<HTMLInputElement>) => handleSearch((e.target as HTMLInputElement).value)}
                 prefix={<SearchOutlined />}
               />
               
@@ -1172,7 +1189,7 @@ const SafeAlertAgent: React.FC = () => {
                           size="small"
                           icon={<BellOutlined />}
                           loading={sendingNotifications.has(report.id)}
-                          onClick={(e) => {
+                          onClick={(e: React.MouseEvent<HTMLElement>) => {
                             e.stopPropagation(); // 阻止触发Card的点击事件
                             sendNotification(report);
                           }}
